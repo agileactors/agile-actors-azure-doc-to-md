@@ -1,0 +1,62 @@
+{
+  "title": "Claim Submission Procedure",
+  "category": "Claims Process",
+  "attention_points": [
+    {
+      "text": "Claims on lapsed or unpaid policies must be rejected, not placed on hold.",
+      "children": []
+    },
+    {
+      "text": "Missing documents should be requested once, with a clear deadline communicated to the customer.",
+      "children": []
+    },
+    {
+      "text": "Never assign a claim to an assessor before confirming the incident type is covered.",
+      "children": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "STEP_1",
+      "question": "Policy active and premiums paid?",
+      "branches": {
+        "no": "OUTCOME_1",
+        "yes": "STEP_2"
+      }
+    },
+    {
+      "id": "STEP_2",
+      "question": "Incident type covered by policy?",
+      "branches": {
+        "no": "OUTCOME_1",
+        "yes": "STEP_3"
+      }
+    },
+    {
+      "id": "STEP_3",
+      "question": "Required documents submitted?",
+      "branches": {
+        "no": "OUTCOME_2",
+        "yes": "OUTCOME_3"
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "OUTCOME_1",
+      "title": "Reject claim, notify customer",
+      "description": "Reject claim, notify customer"
+    },
+    {
+      "id": "OUTCOME_2",
+      "title": "Request missing documents",
+      "description": "Request missing documents"
+    },
+    {
+      "id": "OUTCOME_3",
+      "title": "Assign to claim accessor",
+      "description": "Assign to claim accessor"
+    }
+  ],
+  "main_text": null
+}
