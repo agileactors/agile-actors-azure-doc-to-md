@@ -1,0 +1,52 @@
+# Claim Submission Procedure
+
+Category: Claims Process
+
+This document describes the decision process consultants follow for this procedure.
+
+Customer reports a claim
+
+
+## Policy active and premiums paid?
+
+
+## Yes
+
+
+## Incident type covered by policy?
+
+
+## No
+
+
+## No
+
+
+## Reject claim, notify customer
+
+
+## Yes
+
+
+## Required documents submitted?
+
+
+## No
+
+
+## Yes
+
+
+## Request missing documents
+
+
+## Assign to claim accessor
+
+
+## Attention points
+
+Claims on lapsed or unpaid policies must be rejected, not placed on hold.
+
+Missing documents should be requested once, with a clear deadline communicated to the customer.
+
+Never assign a claim to an assessor before confirming the incident type is covered.

@@ -1,0 +1,15 @@
+[project]
+name = "docs-to-structured-markdown"
+version = "0.1.0"
+description = "Word documents in, structured Markdown out, with a deterministic validator between the language model and the file it writes."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.120.2",
+    "azure-ai-documentintelligence>=1.0.2",
+    "python-dotenv>=1.0.0",
+    "jinja2>=3.1.6",
+    "pydantic>=2.13.4",
+]

@@ -1,0 +1,29 @@
+{
+  "title": "Personal Loan Overview",
+  "category": "Lending Process",
+  "attention_points": [
+    {
+      "text": "Personal loans are unsecured, so affordability from income is the whole basis of the assessment.",
+      "children": []
+    },
+    {
+      "text": "Assess against documented committed outgoings, not self-reported expenditure.",
+      "children": []
+    },
+    {
+      "text": "Quote the total repayable alongside the monthly instalment in every illustration.",
+      "children": []
+    },
+    {
+      "text": "Funds are only disbursed to an account held in the applicant's own name.",
+      "children": []
+    },
+    {
+      "text": "Settlement figures expire twenty-eight days after issue.",
+      "children": []
+    }
+  ],
+  "steps": [],
+  "outcomes": [],
+  "main_text": "This document gives consultants background on how personal loans are assessed, priced, and managed. It is written as guidance rather than as a step-by-step decision process.\n\nA personal loan is an unsecured advance of a fixed amount, repaid in equal monthly instalments over an agreed term. Because nothing is held as security, the assessment rests entirely on the applicant's ability to repay from income. This distinguishes personal lending from secured products, where the value of the asset carries part of the risk and the affordability picture matters correspondingly less.\n\nAffordability is assessed on net monthly income after tax, measured against committed outgoings rather than declared expenditure. Committed outgoings include rent or mortgage payments, existing credit commitments, and regular dependents' costs. Consultants work from documented figures wherever they are available, since self-reported spending is consistently understated and is the single largest source of assessment error on this product.\n\nPricing reflects the applicant's credit profile, the amount advanced, and the length of the term. Longer terms reduce the monthly instalment but increase the total cost of borrowing, and customers frequently focus on the instalment alone. The total repayable figure is quoted alongside the monthly amount in every illustration so that the comparison is visible rather than something the customer has to work out for themselves.\n\nFunds are disbursed to a nominated account held in the applicant's own name, and the first instalment falls due one calendar month after disbursement. The repayment date can be aligned to the customer's pay date at the point of setup, which materially reduces early missed payments. Statements are issued annually and show the outstanding balance, interest charged, and remaining term.\n\nCustomers may repay early in part or in full at any point. Early settlement reduces the interest payable, and a settlement figure is valid for twenty-eight days from the date it is issued. Where a customer falls behind, the account is managed through the arrears process rather than through the lending team, and consultants pass these cases on with the payment history attached rather than negotiating revised terms directly."
+}
