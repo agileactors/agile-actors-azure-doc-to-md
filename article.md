@@ -1,5 +1,3 @@
-# Turning messy docs into structured Markdown using Azure Document Intelligence + Pydantic + Jinja2
-
 How many times have you received a document that's messy, unstructured, or just plain hard to work with? Now imagine you need a whole stack of them as source material for an AI app. That was my task: Word documents, some laid out as decision trees, some as plain narratives. Structure tells a model what matters and how the pieces connect, so the goal was to turn those documents into a clean, structured Markdown format. To get there, I built a pipeline where [Azure Document Intelligence](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/?view=doc-intel-4.0.0) extracts the content, [Pydantic](https://pydantic.dev/docs/validation/latest/get-started/) enforces the structure, and [Jinja2](https://jinja.palletsprojects.com/en/stable/) renders the Markdown. I also used [Claude from Anthropic](https://www.anthropic.com/) for every step that needed an LLM, but you can swap in any LLM you prefer.
 
 ### The pipeline
