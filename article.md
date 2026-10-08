@@ -53,7 +53,7 @@ Those six are then split two ways, and the split matters. Four of them stay in `
 ### Step 1: Extracting data with Azure Document Intelligence
 [Azure Document Intelligence](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/?view=doc-intel-4.0.0) reads a document and returns its text along with the layout it detects: headings, paragraphs, tables, and the boxes of a drawing. To run the demo, you'll need an Azure Document Intelligence resource, plus its endpoint and key.
 
-> The code snippets in this article are trimmed to the essentials: imports, docstrings and logging are left out. The full, runnable code is in the [repo](https://github.com/msamprovalaki/docs-to-structured-markdown).
+> The code snippets in this article are trimmed to the essentials: imports, docstrings and logging are left out. The full, runnable code is in the [repo](https://github.com/agileactors/agile-actors-azure-doc-to-md).
 
 ```python
 endpoint = os.environ["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"]
@@ -549,4 +549,4 @@ Worth being upfront about the rough edges too: **this only works as well as extr
 
 The first two showed up while building this; the third is why I'd convert any ASCII flowchart into real shapes before running it through. Knowing where a pipeline breaks is as useful as knowing where it works.
 
-If you're dealing with your own pile of decision trees, SOPs, runbooks, or narrative procedures, the same pattern should carry over — swap in your own documents, and the six stages don't change. The full code is in [this repo](https://github.com/msamprovalaki/docs-to-structured-markdown).
+If you're dealing with your own pile of decision trees, SOPs, runbooks, or narrative procedures, the same pattern should carry over — swap in your own documents, and the six stages don't change. The full code is in [this repo](https://github.com/agileactors/agile-actors-azure-doc-to-md).
