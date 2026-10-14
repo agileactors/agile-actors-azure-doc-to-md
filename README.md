@@ -6,6 +6,14 @@ validator between the language model and the file it writes.
 This is the companion code for [`article.md`](article.md), which walks through
 the same pipeline in detail. This README covers what it does and why.
 
+1. [The problem](#the-problem)
+2. [How it works](#how-it-works)
+3. [Setup](#setup)
+4. [Using your own documents](#using-your-own-documents)
+5. [What it doesn't do](#what-it-doesnt-do)
+6. [Code Structure](#code-structure)
+7. [License](#license)
+
 ## The problem
 
 Procedures get written in two shapes: **decision trees**, usually drawn as a
@@ -91,7 +99,7 @@ stands and the warnings are written out for a human.
 The goal was never a pipeline that always gets it right. It's one that tells you
 when it might not have.
 
-## Running it
+## Setup
 
 Requires **Python 3.12+** and [uv](https://docs.astral.sh/uv/).
 
@@ -168,19 +176,42 @@ answer and the output tells you nothing.
 - **One repair attempt**, then the warnings are surfaced rather than retried.
 
 
-## Layout
+## Code Structure
 
 ```
-main.py                 # batch orchestrator — the entry point
-src/                    # one module per stage, plus:
-  pydantic_schema.py    #   CallScript, DecisionStep, Outcome, AttentionPoint
-  prompts/              #   one prompt per stage
-templates/              # the single Jinja2 template, both shapes
-few_shot_examples/      # what the model is shown at mapping time
-sample_inputs/          # what the demo processes — held out of the corpus
-synthetic_docs/         # the source .docx files the examples came from
-outputs/                # generated on each run
-environment/            # credentials: copy .env.example to .env here
+.
+├── assets
+│   └── images                  # images used by the article
+├── environment
+│   └── .env.example            # credentials template: copy to .env in this folder
+├── few_shot_examples           # what the model is shown at mapping time
+│   ├── narrative               # <name>_raw.txt + <name>_expected.json pairs
+│   └── tree                    # <name>_raw.txt + <name>_expected.json pairs
+├── outputs                     # committed sample results, overwritten on each run
+├── sample_inputs               # what the demo processes, held out of the examples
+├── src                         # one module per stage
+│   ├── create_few_shot_examples
+│   │   └── create_raw_examples.py  # extracts synthetic_docs into few_shot_examples
+│   ├── prompts                 # one system prompt per LLM stage
+│   ├── classify.py             # tree or narrative
+│   ├── config.py               # the model name, set in one place
+│   ├── extract.py              # .docx to text via Azure Document Intelligence
+│   ├── map.py                  # text to CallScript via Claude forced tool use
+│   ├── pydantic_schema.py      # CallScript, DecisionStep, Outcome, AttentionPoint
+│   ├── render.py               # CallScript to Markdown via Jinja2
+│   ├── repair.py               # one gated repair attempt
+│   └── validate.py             # deterministic structural checks
+├── synthetic_docs
+│   └── docs                    # the source .docx files the examples came from
+├── templates
+│   └── template_script.md.j2   # the single Jinja2 template, both shapes
+├── .gitignore
+├── article.md                  # the companion article
+├── LICENSE
+├── main.py                     # batch orchestrator, the entry point
+├── pyproject.toml              # project metadata and dependencies
+├── README.md
+└── uv.lock                     # pinned dependency versions
 ```
 
 The stages in `src/` are independent and importable on their own — `main.py` only
