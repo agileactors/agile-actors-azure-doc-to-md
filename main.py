@@ -64,8 +64,7 @@ def process_file(source_path: Path) -> tuple[str, list[str], str]:
     category = classify(raw_text)
 
     # Step 3: Map the text to a structured schema.
-    if category == "tree":
-        print("Mapping onto CallScript...")
+    print("Mapping onto CallScript...")
     script = map_to_schema(raw_text, category)
 
     # Step 4: Sanity-check the schema for common issues.
@@ -113,7 +112,7 @@ def check_credentials() -> None:
             "Missing credential(s): "
             + ", ".join(missing)
             + f"\nSet them in {PROJECT_ROOT / 'environment' / '.env'} "
-            "(copy .env.example to start)."
+            "(copy environment/.env.example to start)."
         )
 
 

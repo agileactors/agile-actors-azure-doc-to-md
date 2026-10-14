@@ -96,12 +96,11 @@ when it might not have.
 Requires **Python 3.12+** and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/msamprovalaki/docs-to-structured-markdown.git
-cd docs-to-structured-markdown
+git clone https://github.com/agileactors/agile-actors-azure-doc-to-md.git
+cd agile-actors-azure-doc-to-md
 uv sync
 
-mkdir -p environment
-cp .env.example environment/.env   # then fill in all three values
+cp environment/.env.example environment/.env   # then fill in all three values
 
 uv run main.py
 ```
@@ -139,6 +138,19 @@ should map to, written by hand) in `few_shot_examples/tree/` or
 `few_shot_examples/narrative/`. The pipeline picks up new pairs automatically,
 and fails loudly if one half is missing.
 
+To get the `_raw.txt`, put the `.docx` in `synthetic_docs/docs/trees/` or
+`synthetic_docs/docs/narratives/` and run:
+
+```bash
+uv run src/create_few_shot_examples/create_raw_examples.py
+```
+
+It runs every document there through the same Azure extraction the pipeline
+uses and writes the result into the matching `few_shot_examples/` folder. If a
+`_expected.json` already exists, it also validates it and renders a `<name>.md`
+preview so you can review the pair. Each run re-extracts every document (one
+Azure call each) and overwrites the existing `_raw.txt` files.
+
 Keep the two worlds separate. `sample_inputs/` is deliberately *not* part of the
 example corpus — if a demo input is also an example, the model is handed its own
 answer and the output tells you nothing.
@@ -168,6 +180,7 @@ few_shot_examples/      # what the model is shown at mapping time
 sample_inputs/          # what the demo processes — held out of the corpus
 synthetic_docs/         # the source .docx files the examples came from
 outputs/                # generated on each run
+environment/            # credentials: copy .env.example to .env here
 ```
 
 The stages in `src/` are independent and importable on their own — `main.py` only
