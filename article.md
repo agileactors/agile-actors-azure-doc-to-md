@@ -153,6 +153,7 @@ class CallScript(BaseModel):
     A CallScript describes either a decision-tree call flow or a
     plain-narrative procedure, never both.
     """
+
     # common fields
     title: str = Field(..., description="The name of the procedure.")
     category: str | None = Field(
@@ -243,7 +244,7 @@ def map_to_schema(raw_text: str, category: str) -> CallScript:
         tool_choice={"type": "tool", "name": "record_call_script"},
     )
 
-    tool_call = next(block for block in response.content if block.type == "tool_use")
+    tool_call = next((b for b in response.content if b.type == "tool_use"), None)
     return CallScript.model_validate(tool_call.input)
 ```
 
@@ -390,7 +391,7 @@ def render_markdown(script: CallScript) -> str:
     jinja_env = Environment(
         loader=FileSystemLoader(TEMPLATES_DIR),
         trim_blocks=True,
-        lstrip_blocks=True, 
+        lstrip_blocks=True,
     )
     template = jinja_env.get_template("template_script.md.j2")
     rendered = template.render(script=script)
