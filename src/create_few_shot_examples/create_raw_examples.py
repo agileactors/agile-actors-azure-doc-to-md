@@ -1,7 +1,7 @@
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-import sys
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
@@ -9,7 +9,6 @@ sys.path.append(str(PROJECT_ROOT))
 from src.examples import EXAMPLES_DIR
 from src.extract import extract_text
 from src.pydantic_schema import CallScript
-from src.render import render_markdown
 
 load_dotenv(PROJECT_ROOT / "environment" / ".env")
 
@@ -69,10 +68,8 @@ def create_raw_example(docx_path: str | Path, shape_category: str, name: str) ->
         )
         return raw_path
 
-    # Render the hand-written expected JSON with the pipeline's own Jinja2
-    # template. Validating first means a malformed example fails here, while
-    # it is being authored, rather than mid-prompt at mapping time.
-    script = CallScript.model_validate_json(expected_path.read_text(encoding="utf-8"))
+    # Validate the hand-written expected JSON
+    CallScript.model_validate_json(expected_path.read_text(encoding="utf-8"))
 
     return raw_path
 

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from functools import lru_cache
 
 import anthropic
@@ -61,6 +62,12 @@ def request_call_script(
         tools=[tool],
         tool_choice={"type": "tool", "name": _TOOL_NAME},
     )
+
+    if response.stop_reason in ("max_tokens", "refusal"):
+        raise ValueError(
+            f"Model stopped early (stop_reason={response.stop_reason!r}); "
+            f"no complete CallScript was returned."
+        )
 
     tool_call = next((b for b in response.content if b.type == "tool_use"), None)
     if tool_call is None:

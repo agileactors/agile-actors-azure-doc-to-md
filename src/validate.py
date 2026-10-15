@@ -1,23 +1,22 @@
 from __future__ import annotations
+
 import re
 
 from .pydantic_schema import CallScript, flatten_attention_points
 
-# The minimum fraction of distinct words in a source sentence that must
-# also appear in the `main_text` for it to count as "covered" by the narrative.
-# The same ratio decides whether a step or outcome label matches a source line,
-# and whether a source attention-point line is covered by `attention_points`.
+# The minimum fraction of distinct words in a source sentence that must also appear in the `main_text` for it to count as "covered" by the narrative.
+# The same ratio decides whether a step or outcome label matches a source line, and whether a source attention-point line is covered by `attention_points`.
 _MIN_WORD_OVERLAP_RATIO = 0.8
+
 # The number of lines at the top of a document to search for a metadata line
 _METADATA_SEARCH_LINES = 5
-# The regex that matches the "Attention points" heading, which marks the
-# end of the narrative body and the start of the attention_points list.
+
+# The regex that matches the "Attention points" heading, which marks the end of the introduction body and the start of the attention_points list.
 _ATTENTION_HEADING = re.compile(
     r"^#*\s*Attention points\s*$", re.MULTILINE | re.IGNORECASE
 )
-# The regex that matches a metadata line, e.g., "# Category: Billing"
+
 _METADATA_LINE = re.compile(r"^#*\s*Category:.*$", re.MULTILINE | re.IGNORECASE)
-# The regex that matches the title line (the endpoint of the document), e.g., "# How to reset your password"
 _ENTRY_POINT_TITLE = re.compile(r"\A\s*#*[^\n]*\n")
 
 
@@ -282,8 +281,10 @@ def _check_narrative_size(script: CallScript, raw_text: str) -> list[str]:
         ).content_size
         if output_size > source_size:
             return [
-                f"Possible invented content: main_text has {output_size} "
-                f"words but the source body has only {source_size}."
+                (
+                    f"Possible invented content: main_text has {output_size} "
+                    f"words but the source body has only {source_size}."
+                )
             ]
     return []
 
