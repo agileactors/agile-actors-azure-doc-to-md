@@ -119,6 +119,16 @@ resource](https://learn.microsoft.com/en-us/azure/ai-services/document-intellige
 and an [Anthropic API key](https://console.anthropic.com/). There is no offline
 mode; `main.py` checks for all three up front and names anything missing.
 
+**No keys? You can still see the results.** 
+
+The output of a real run on both
+sample inputs is committed under `outputs/`. Start with
+[`password_reset_procedure/final.md`](outputs/password_reset_procedure/final.md)
+(a decision tree) and
+[`complaints_handling_overview/final.md`](outputs/complaints_handling_overview/final.md)
+(a narrative), and read each one next to its `raw.txt` to see what the pipeline
+rebuilt.
+
 Two documents ship in `sample_inputs/`, so this runs out of the box. Each one
 gets a folder in `outputs/<name>/`:
 
