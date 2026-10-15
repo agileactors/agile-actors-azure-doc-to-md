@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from .prompts import CLASSIFY_PROMPT
 from .config import MODEL_NAME
 from .llm import get_client
+from .prompts import CLASSIFY_PROMPT
+
+VALID_LABELS = ("tree", "narrative")
 
 
 def classify(raw_text: str) -> str:
@@ -26,9 +28,11 @@ def classify(raw_text: str) -> str:
     )
 
     # _first_text extracts the first text block from the response, which should contain the label.
-    label = _first_text(response).strip().lower()
+    label = _first_text(response).strip().strip(".").lower()
     print(f"Label is {label!r}")
-    return "tree" if "tree" in label else "narrative"
+    if label not in VALID_LABELS:
+        raise ValueError(f"Unexpected classification label {label!r}.")
+    return label
 
 
 def _first_text(response) -> str:
