@@ -15,9 +15,9 @@ flowchart TD
     R -->|no: keep the original| H
     H --> I[Structured Markdown]
 ```
-The pipeline runs in six stages. The Azure Document Intelligence prebuilt-layout model extracts text, tables, and layout from the source document. A classifier then determines whether the document is a decision tree or a plain narrative, and injects the appropriate few-shot examples into the LLM prompt. The LLM maps the extracted text onto a Pydantic model, which is then validated deterministically to catch structural issues. If it flags a problem, the LLM gets one chance to repair it and the repaired version goes back through validation. Finally, the Pydantic model is rendered to Markdown using Jinja2.
+The pipeline runs in six stages. The Azure Document Intelligence prebuilt-layout model extracts text, tables, and layout from the source document. A classifier then determines whether the document is a decision tree or a plain narrative, and that label decides which few-shot examples go into the mapping prompt. The LLM maps the extracted text onto a Pydantic model, which is then validated deterministically to catch structural issues. If it flags a problem, the LLM gets one chance to repair it and the repaired version goes back through validation. Finally, the Pydantic model is rendered to Markdown using Jinja2.
 
-> **The idea behind the design is that no stage trusts the one before it.** Mapping rebuilds the structure instead of assuming extraction kept it, validation checks the mapping without asking an LLM, and a repair is only kept if it passes the same checks again.
+> **The idea behind the design is that no stage trusts the one before it.** Mapping rebuilds the structure instead of assuming extraction kept it, validation checks the mapping without asking an LLM, and a repair is only kept if the same checks, run again, show fewer warnings and no lost content.
 
 
 For this pipeline, a document can be one of two shapes:
@@ -51,7 +51,7 @@ Those six are then split two ways, and the split matters. Four of them stay in `
 ### Step 1: Extracting data with Azure Document Intelligence
 [Azure Document Intelligence](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/?view=doc-intel-4.0.0) reads a document and returns its text along with the layout it detects: headings, paragraphs, tables, and the boxes of a drawing. To run the demo, you'll need an Azure Document Intelligence resource, plus its endpoint and key.
 
-> The code snippets in this article are trimmed to the essentials: imports, docstrings and logging are left out. The full, runnable code is in the [repo](https://github.com/agileactors/agile-actors-azure-doc-to-md).
+> The code snippets in this article are trimmed to the essentials: imports and logging are left out, and docstrings are shortened. The full code is in the [repo](https://github.com/agileactors/agile-actors-azure-doc-to-md).
 
 ```python
 endpoint = os.environ["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"]
@@ -90,7 +90,7 @@ def extract_text(source_path: str | Path) -> str:
 
 The next step is the classification of the extracted text: is the document a decision tree or a plain narrative? The label determines which set of few-shot examples gets loaded into the LLM's prompt for the mapping step, and showing the model examples of the right shape is what helps it understand the document's structure and content. I used *Claude* for the classification step, but you can use any LLM you prefer.
 
-> Note: A Vision Language Model (VLM) could do this classification instead, since it sees what text extraction loses, like arrow direction and spatial layout. But a VLM costs more and needs an extra step to render the document as an image, so this demo classifies from the extracted text alone. If you'd rather use a VLM, feel free to swap in your own classifier here. 
+> **Note**: A Vision Language Model (VLM) could do this classification instead, since it sees what text extraction loses, like arrow direction and spatial layout. But a VLM costs more and needs an extra step to render the document as an image, so this demo classifies from the extracted text alone. If you'd rather use a VLM, feel free to swap in your own classifier here. 
 
 
 ```python
@@ -108,9 +108,11 @@ def classify(raw_text: str) -> str:
     )
 
     # _first_text returns the first text block of the response.
-    label = _first_text(response).strip().lower()
+    label = _first_text(response).strip().strip(".").lower()
     print(f"Label is {label!r}")
-    return "tree" if "tree" in label else "narrative"
+    if label not in VALID_LABELS:
+        raise ValueError(f"Unexpected classification label {label!r}.")
+    return label
 ```
 
 
@@ -132,7 +134,7 @@ Drop a new `<name>_raw.txt` / `<name>_expected.json` pair into a category folder
 
 Rather than having two separate schemas, one for trees, one for narratives, I used a single `CallScript` model that holds the fields common to both shapes, plus the fields specific to each case. A single validator then enforces the one rule that ties it all together: a document must be a tree *or* a narrative, never both, and never neither.
 
-> Why use Pydantic at all, when the LLM only needs a JSON `input_schema`. Function calling features in most LLMs already let you define a schema and get structured output, so why not just write that schema by hand? Because here the schema *comes from* Pydantic: the `input_schema` handed to the LLM is generated with `CallScript.model_json_schema()`. **One class is both the schema the LLM sees and the validator that checks its answer**, so the two can never drift apart. On top of that, Pydantic can enforce rules a JSON schema can't express, like the tree-or-narrative rule, which runs as a Python validator once the response arrives.
+> Why use Pydantic at all, when the LLM only needs a JSON `input_schema`? Function calling features in most LLMs already let you define a schema and get structured output, so why not just write that schema by hand? Because here the schema *comes from* Pydantic: the `input_schema` handed to the LLM is generated with `CallScript.model_json_schema()`. **One class is both the schema the LLM sees and the validator that checks its answer**, so the two can never drift apart. On top of that, Pydantic can enforce rules a JSON schema can't express, like the tree-or-narrative rule, which runs as a Python validator once the response arrives.
 
 
 Every script has a few shared fields, plus a few that depend on its shape:
@@ -206,19 +208,17 @@ With the text extracted and the shape classified, the next step is mapping that 
 
 The demo uses *Claude*, but any LLM that supports structured output will work. The output is then parsed into a `CallScript` object.
 
-> Note: All the prompts used in the pipeline live in the `src/prompts/` folder. Keep in mind that they're built for this demo, **not as a general-purpose template**. The mapping prompt starts with the basics: never invent information and never drop it. Then it covers the trickier edge cases:
->
-> - Pick exactly one shape, tree or narrative. Never both, never neither.
-> - Make every branch point to a step or outcome that actually exists.
-> - Treat outcomes as endpoints. They never route anywhere else.
-> - Keep every sentence of narrative content, without summarizing.
+All the prompts used in the pipeline live in the `src/prompts/` folder. Keep in mind that they're built for this demo, **not as a general-purpose template**. The mapping prompt starts with the basics: never invent information and never drop it. Then it covers the trickier edge cases:
+ - Pick exactly one shape, tree or narrative. Never both, never neither.
+ - Make every branch point to a step or outcome that actually exists.
+ - Treat outcomes as endpoints. They never route anywhere else.
+ - Keep every sentence of narrative content, without summarizing.
 
 ```python
 def map_to_schema(raw_text: str, category: str) -> CallScript:
     """
     Map raw text into a validated CallScript.
     """
-    client = get_client()  # Anthropic client
     few_shot = load_few_shot_examples(category)
 
     messages = []
@@ -227,28 +227,16 @@ def map_to_schema(raw_text: str, category: str) -> CallScript:
         messages.append({"role": "assistant", "content": example_expected})
     messages.append({"role": "user", "content": raw_text})
 
-    tool = {
-        "name": "record_call_script",
-        "description": (
-            "Record the CallScript structure extracted from the source text."
-        ),
-        "input_schema": CallScript.model_json_schema(),
-    }
-
-    response = client.messages.create(
-        model=MODEL_NAME,
-        max_tokens=16000,
+    # Forced tool use: Claude must return a CallScript, which is then validated.
+    # An incomplete reply raises an error.
+    return request_call_script(
         system=AGENT_PROMPT,
         messages=messages,
-        tools=[tool],
-        tool_choice={"type": "tool", "name": "record_call_script"},
+        tool_description="Record the CallScript structure extracted from the source text.",
     )
-
-    tool_call = next((b for b in response.content if b.type == "tool_use"), None)
-    return CallScript.model_validate(tool_call.input)
 ```
 
-> **Note:** The demo uses Claude's **tool use** to get structured output. You define a tool whose `input_schema` is the JSON schema of your Pydantic model, then force the model to call that tool. Claude also offers native structured outputs, which guarantee the response matches your schema. Most other LLMs support the same idea through their own schema or function-calling features.
+> **Note:** Claude also offers native structured outputs, which guarantee the response matches your schema. Most other LLMs support the same idea through their own schema or function-calling features.
 
 ### Step 4: Validating the Pydantic model
 
@@ -261,13 +249,20 @@ The validation step checks for several common issues, each caught by its own fun
 |---|---|---|
 | **Dangling references** | Decision trees | A step that points to an outcome or step that doesn't exist, leaving the agent at a dead end mid-call |
 | **Unreachable steps and outcomes** | Decision trees | A step or outcome that nothing points to, usually a dropped or misplaced branch (the first step is exempt, since it's the entry point) |
-| **Ungrounded nodes** | Decision trees | A step or outcome whose wording matches no line in the source (below 80% word overlap), usually an invented node |
+| **Ungrounded nodes** | Decision trees | A step or outcome that matches no single line in the source (less than 80% of its words found in any one line), usually an invented node |
 | **Narrative coverage** | Narratives | A source sentence with less than 80% of its words in `main_text`, often from the model quietly summarizing or skipping sentences |
 | **Narrative size** | Narratives | A `main_text` with more words than the source body, usually a sign the model added something |
 | **Attention-point coverage** | Every script | A caveat under the source's "Attention points" heading that matches no single attention point at 80% word overlap |
-| **Shape conflicts** | Every script | Both `steps` and `main_text` filled in, or neither |
+| **Shape conflicts** | Every script | Both `steps` and `main_text` filled in |
 
-> **Note:** The three overlap checks share one threshold: 80% of a source line's distinct words must appear in the output. It's loose enough to let the model reflow a paragraph or fix a typo, and strict enough to catch a summarized or dropped sentence. The last check, shape conflicts, is a safety net: the Pydantic model already rules them out, but a `CallScript` built with `model_construct()` skips validation.
+> **Note:** Three of these checks compare wording, and all three use the same rule: two pieces of text match when at least 80% of the distinct words in one are found in the other. What differs is the direction:
+>
+> - **Narrative coverage** and **attention-point coverage** start from the source. For each source sentence or attention-point line, they ask: *did it make it into the output?*
+> - **Ungrounded nodes** starts from the output. For each step and outcome, it asks: *does it come from a line in the source?*
+>
+> 80% is loose enough to let the model reflow a paragraph or fix a typo, and strict enough to catch a summarized or dropped sentence.
+>
+> The last check, shape conflicts, is a safety net: the Pydantic model already rules them out, but a `CallScript` built with `model_construct()` skips validation.
 
 None of these checks stop the pipeline. Each one returns a warning instead of raising an error, and those warnings decide what happens next: if the list is empty, the script goes straight to rendering. If not, the warnings are handed to the repair step, so the model knows exactly what to fix.
 
@@ -298,7 +293,7 @@ def sanity_check(script: CallScript, raw_text: str) -> list[str]:
     return warnings
 ```
 
-The first two tree checks only look at the graph, so they can't tell a real box from one the model made up. If a branch points at an invented outcome, the reference resolves and the outcome is reachable, so the graph looks perfect. The `_check_grounding` goes back to the source: it compares the wording of every step and outcome against the extracted text, line by line. An invented box won't match any line, so it gets flagged.
+The first two tree checks only look at the graph, so they can't tell a real box from one the model made up. If a branch points at an invented outcome, the reference resolves and the outcome is reachable, so the graph looks perfect. The `_check_grounding` goes back to the source: it compares every step and outcome against the extracted text, line by line. An invented box won't match any line, so it gets flagged.
 
 Narratives have the same blind spot. `_check_narrative_coverage` walks the source and asks whether each sentence made it into `main_text`, so a sentence that exists only in the output is never examined, and its extra words can even help other sentences reach the threshold. The `_check_narrative_size` closes that gap with a simple count: `main_text` restates the source body word for word, so its size should never be larger than the body's.
 
@@ -309,7 +304,7 @@ Attention points had a blind spot of their own. Narrative coverage stops at the 
 
 ### Step 5: Repairing the Pydantic model
 
-If validation flags anything, the LLM gets exactly **one attempt** to repair it: it's shown the validation errors and asked to produce a corrected version of the object. I capped it at one try on purpose. Without a limit, the model could keep "fixing" the same problem in a loop, burning time and tokens without ever getting it right. I used *Claude* for the repair step, but as I mentioned before, you can use any LLM you prefer.
+If validation flags anything, the LLM gets exactly **one attempt** to repair it: it's shown the warnings, the current object and the source text, and asked to produce a corrected version of the object. I capped it at one try on purpose. Without a limit, the model could keep "fixing" the same problem in a loop, burning time and tokens without ever getting it right. I used *Claude* for the repair step, but as I mentioned before, you can use any LLM you prefer.
 
 Here's the part worth calling out, because it's easy to get wrong: checking that the warning count went down isn't enough. Say the model gets a *"dangling reference" warning*. The easiest way to make it disappear is to simply *delete* the branch that causes it. The warning is gone, but the script has lost content, as we discussed in the previous step, so it's actually worse than before.
 
@@ -401,11 +396,13 @@ def render_markdown(script: CallScript) -> str:
 
 ### Outputs
 
-In the `outputs` folder, each document gets its own subfolder named after the source file. Inside that subfolder, you'll find:
+In the `outputs` folder, each document gets its own subfolder, named after the document's path under `sample_inputs` without the extension. Inside that subfolder, you'll find:
 
 - `final.md` — the rendered Markdown output
 - `raw.txt` — the raw text extracted from the source document using Azure Document Intelligence
-- `warnings.txt` — the warnings that survived repair, or `No warnings - all checks passed`.
+- `warnings.txt` — the warnings that survived repair, or `No warnings - all checks passed.`
+
+If a document fails, its folder holds only an `error.txt` with the reason, and any files from an earlier run are removed so nothing stale is left behind.
 
 #### Narrative example
 
@@ -483,7 +480,7 @@ Customer requests password reset                               → (the flowchar
 > **Note:** Two lines are intentionally left out of the output. The first is the intro sentence: every sample tree opens with a similar high-level summary of the procedure, and since it gives the agent nothing it needs to follow the flow, I don't store it. The second is the flowchart's entry point, *Customer requests password reset*. It isn't a question, so it isn't `STEP_1`. It's the trigger that tells the agent when to use the flow, and a tree `CallScript` has no field for it. If you'd rather keep either one, add a field to the `CallScript` model and update the mapping prompt to fill it.
 
 Every label survived extraction. **The arrows did not.**
-All nine `##` lines are flat — same heading level, reading order only, no indication of which `Yes`/`No` belongs to which question, or where either one leads. The topology, which is the entire content of a decision tree, is gone.
+All nine `##` lines of the flowchart are flat — same heading level, reading order only, no indication of which `Yes`/`No` belongs to which question, or where either one leads. The topology, which is the entire content of a decision tree, is gone.
 
 **Rebuilding it is the actual job handed to the mapping stage**: match each `Yes`/`No` back to its question, and each terminal line to the branch that leads to it, using the few-shot examples and the wording as the only signals.
 
@@ -534,7 +531,7 @@ The pipeline can only be as reliable as the documents it reads. The sample docum
 
 So, back to the question I opened with: what do you do with a document that's messy, unstructured, or just plain hard to work with? This pipeline is an answer, not the only one, but it works well enough to be worth sharing. 
 
-*A messy Word document goes in. Azure Document Intelligence extracts the text and layout, a classifier decides whether it's a decision tree or a narrative, an LLM maps it onto a Pydantic model, deterministic checks flag what came out wrong, one gated repair attempt fixes what it can, and Jinja2 renders the result as a structured Markdown.*
+*A messy Word document goes in. Azure Document Intelligence extracts the text and layout, a classifier decides whether it's a decision tree or a narrative, an LLM maps it onto a Pydantic model, deterministic checks flag what came out wrong, one gated repair attempt fixes what it can, and Jinja2 renders the result as structured Markdown.*
 
 **The part that matters is that no stage trusts the one before it.**
 
