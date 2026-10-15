@@ -71,12 +71,14 @@ def llm_repair(script: CallScript, warnings: list[str], raw_text: str) -> CallSc
 
     response = client.messages.create(
         model=MODEL_NAME,
-        # Same budget note as the mapping call: thinking + tool input share it.
+        # Same budget as the mapping call: the whole object comes back as tool input.
         max_tokens=16000,
         system=REPAIR_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_message}],
         tools=[tool],
         tool_choice={"type": "tool", "name": "record_call_script"},
     )
-    tool_call = next(block for block in response.content if block.type == "tool_use")
+    tool_call = next((b for b in response.content if b.type == "tool_use"), None)
+    if tool_call is None:
+        raise ValueError(f"No tool_use block (stop_reason={response.stop_reason!r})")
     return CallScript.model_validate(tool_call.input)

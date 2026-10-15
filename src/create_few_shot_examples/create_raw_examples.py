@@ -64,7 +64,7 @@ def create_raw_example(docx_path: str | Path, shape_category: str, name: str) ->
 
     # Write the raw text to a file named <name>_raw.txt in the category folder
     raw_path = category_dir / f"{name}_raw.txt"
-    raw_path.write_text(raw_text)
+    raw_path.write_text(raw_text, encoding="utf-8")
     print(f"Wrote raw text to {raw_path}")
 
     # Expected files are not generated automatically; they must be created manually
@@ -79,9 +79,9 @@ def create_raw_example(docx_path: str | Path, shape_category: str, name: str) ->
     # Render the hand-written expected JSON with the pipeline's own Jinja2
     # template. Validating first means a malformed example fails here, while
     # it is being authored, rather than mid-prompt at mapping time.
-    script = CallScript.model_validate_json(expected_path.read_text())
+    script = CallScript.model_validate_json(expected_path.read_text(encoding="utf-8"))
     markdown_path = category_dir / f"{name}.md"
-    markdown_path.write_text(render_markdown(script))
+    markdown_path.write_text(render_markdown(script), encoding="utf-8")
     print(f"Rendered {expected_path.name} to {markdown_path}")
 
     return raw_path
