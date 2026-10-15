@@ -34,7 +34,7 @@ not. Here is what Azure returns for a password-reset flowchart:
 ...
 ```
 
-Nine flat lines, all at the same heading level. Which `Yes` belongs to which
+Nine flowchart lines, all at the same heading level. Which `Yes` belongs to which
 question, and where either one leads, is gone. Rebuilding that is the pipeline's
 actual job — and the reason the validation and repair stages exist.
 
@@ -58,8 +58,9 @@ Here is the same document after a run:
 - **OUTCOME_3** (Password reset link sent): Password reset link sent
 ```
 
-The structure is reconstructed. The wording is not touched — every label above
-appears verbatim in the source.
+The structure is reconstructed. The wording is not touched — every question and
+outcome above appears verbatim in the source; only the `Yes`/`No` branch labels
+are lowercased.
 
 ## How it works
 
@@ -67,7 +68,7 @@ appears verbatim in the source.
 |---|---|---|
 | **Extract** | `.docx` → text and layout, via Azure Document Intelligence `prebuilt-layout` | `src/extract.py` |
 | **Classify** | tree or narrative — picks which few-shot examples to show the model | `src/classify.py` |
-| **Map** | text + examples → a `CallScript` object, via Claude forced tool-use | `src/map.py` |
+| **Map** | text + examples → a `CallScript` object, via Claude forced tool-use | `src/map.py`, `src/llm.py` |
 | **Validate** | deterministic structural checks, no LLM involved | `src/validate.py` |
 | **Repair** | one gated attempt, only if validation flagged something | `src/repair.py` |
 | **Render** | `CallScript` → Markdown, via a single Jinja2 template | `src/render.py` |
@@ -82,7 +83,7 @@ documents share a schema and a render template.
 But a schema only checks shape, not sense. A model can return a perfectly valid
 object whose branches point at steps that were never defined. So after mapping,
 plain Python checks the graph: dangling references, steps or outcomes nothing routes to,
-steps or outcomes whose wording matches no line in the source, and — for
+steps or outcomes that match no single line in the source, and — for
 narratives — whether every source sentence actually made it into `main_text`
 and whether `main_text` is no longer than the source body. For both shapes, it
 checks that every attention point in the source made it into the output. No LLM,
@@ -106,7 +107,7 @@ Requires **Python 3.12+**. Install with [uv](https://docs.astral.sh/uv/) or plai
 ```bash
 git clone https://github.com/agileactors/agile-actors-azure-doc-to-md.git
 cd agile-actors-azure-doc-to-md
-uv sync                 
+uv sync
 
 cp environment/.env.example environment/.env   # then fill in all three values
 
@@ -156,7 +157,7 @@ For better results on a new kind of document, add a few-shot example: a
 `<name>_raw.txt` (the extracted text) and a `<name>_expected.json` (what it
 should map to, written by hand) in `few_shot_examples/tree/` or
 `few_shot_examples/narrative/`. The pipeline picks up new pairs automatically,
-and fails loudly if one half is missing.
+and fails loudly if a `_raw.txt` has no matching `_expected.json`.
 
 To get the `_raw.txt`, put the `.docx` in `synthetic_docs/docs/trees/` or
 `synthetic_docs/docs/narratives/` and run:
@@ -168,8 +169,8 @@ uv run src/create_few_shot_examples/create_raw_examples.py
 It runs every document there through the same Azure extraction the pipeline
 uses and writes the result into the matching `few_shot_examples/` folder. If a
 `_expected.json` already exists, it also validates it against the schema, so a
-malformed example fails there rather than at mapping time. Each run re-extracts every document (one
-Azure call each) and overwrites the existing `_raw.txt` files.
+malformed example fails there rather than at mapping time. Each run re-extracts
+every document and overwrites the existing `_raw.txt` files.
 
 Keep the two worlds separate. `sample_inputs/` is deliberately *not* part of the
 example corpus — if a demo input is also an example, the model is handed its own
@@ -208,11 +209,14 @@ answer and the output tells you nothing.
 ├── templates
 │   └── template_script.md.j2   # the single Jinja2 template, both shapes
 ├── .gitignore
-├── .python-version            # Python version uv installs and uses
+├── .python-version             # Python version uv installs and uses
+├── article.md                  # the companion article
 ├── LICENSE
 ├── main.py                     # batch orchestrator, the entry point
 ├── pyproject.toml              # project metadata and dependencies
 ├── README.md
+├── requirements.txt            # pinned dependencies for pip
+├── requirements-dev.txt        # requirements.txt plus the dev tools (ruff)
 └── uv.lock                     # pinned dependency versions
 ```
 
