@@ -194,6 +194,7 @@ answer and the output tells you nothing.
 │   ├── classify.py             # tree or narrative
 │   ├── config.py               # the model name, set in one place
 │   ├── extract.py              # .docx to text via Azure Document Intelligence
+│   ├── llm.py                  # shared Claude client and forced tool-use call
 │   ├── map.py                  # text to CallScript via Claude forced tool use
 │   ├── pydantic_schema.py      # CallScript, DecisionStep, Outcome, AttentionPoint
 │   ├── render.py               # CallScript to Markdown via Jinja2
