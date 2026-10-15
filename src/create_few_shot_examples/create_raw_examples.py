@@ -4,12 +4,9 @@ from dotenv import load_dotenv
 import sys
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(PROJECT_ROOT / "src"))
-# `render`/`pydantic_schema` are imported as part of the `src` package because
-# render.py uses relative imports; the root has to be on the path too.
 sys.path.append(str(PROJECT_ROOT))
 
-from extract import extract_text
+from src.extract import extract_text
 from src.pydantic_schema import CallScript
 from src.render import render_markdown
 
@@ -34,17 +31,11 @@ def create_raw_example(docx_path: str | Path, shape_category: str, name: str) ->
     `<name>_expected.json` still needs to be written by hand next to
     it — `load_few_shot_examples()` raises if that partner is missing.
 
-    When that expected file is already there, it is validated against
-    `CallScript` and rendered through the same Jinja2 template the
-    pipeline uses, into `<name>.md`. That preview is what makes a
-    hand-written example reviewable: a pair that renders cleanly is a
-    pair the mapping stage can safely imitate.
 
     Steps:
         1. Extract text from the .docx or .pdf file.
         2. Create the category folder under `few_shot_examples/` if it doesn't exist.
         3. Write the raw text to `<name>_raw.txt` in that folder
-        4. Render `<name>_expected.json` to `<name>.md` if it exists.
 
     Args:
         docx_path: path to a .docx or .pdf file to extract text from
@@ -55,8 +46,9 @@ def create_raw_example(docx_path: str | Path, shape_category: str, name: str) ->
         Path to the raw example file that was created.
     """
     docx_path = Path(docx_path)
+    docx_name = docx_path.name
     # Extract using Azure Document Intelligence
-    print(f"Extracting text from {docx_path}...")
+    print(f"Extracting text from {docx_name}...")
     raw_text = extract_text(docx_path)
 
     category_dir = EXAMPLES_DIR / shape_category
@@ -65,7 +57,8 @@ def create_raw_example(docx_path: str | Path, shape_category: str, name: str) ->
     # Write the raw text to a file named <name>_raw.txt in the category folder
     raw_path = category_dir / f"{name}_raw.txt"
     raw_path.write_text(raw_text, encoding="utf-8")
-    print(f"Wrote raw text to {raw_path}")
+    raw_name = raw_path.name
+    print(f"Wrote raw text to {raw_name}")
 
     # Expected files are not generated automatically; they must be created manually
     expected_path = raw_path.with_name(f"{name}_expected.json")
@@ -80,9 +73,6 @@ def create_raw_example(docx_path: str | Path, shape_category: str, name: str) ->
     # template. Validating first means a malformed example fails here, while
     # it is being authored, rather than mid-prompt at mapping time.
     script = CallScript.model_validate_json(expected_path.read_text(encoding="utf-8"))
-    markdown_path = category_dir / f"{name}.md"
-    markdown_path.write_text(render_markdown(script), encoding="utf-8")
-    print(f"Rendered {expected_path.name} to {markdown_path}")
 
     return raw_path
 
@@ -107,8 +97,10 @@ def create_raw_examples_from_synthetic_docs() -> list[Path]:
                 continue
             # Create a raw example for each document, using the stem of the filename as the base name
             raw_path = create_raw_example(doc_path, category, doc_path.stem)
-            print(f"Created raw example for {doc_path.name} in {raw_path}")
+            print(f"Created raw example for {doc_path.name}")
             raw_paths.append(raw_path)
+            print(50 * "-")
+
     return raw_paths
 
 
