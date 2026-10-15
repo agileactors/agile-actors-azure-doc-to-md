@@ -1,6 +1,6 @@
 import anthropic
 
-from .classify import load_few_shot_examples
+from .examples import load_few_shot_examples
 from .llm import request_call_script
 from .prompts import AGENT_PROMPT
 from .pydantic_schema import CallScript

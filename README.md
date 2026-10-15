@@ -193,6 +193,7 @@ answer and the output tells you nothing.
 │   ├── prompts                 # one system prompt per LLM stage
 │   ├── classify.py             # tree or narrative
 │   ├── config.py               # the model name, set in one place
+│   ├── examples.py             # loads few-shot pairs from few_shot_examples/
 │   ├── extract.py              # .docx to text via Azure Document Intelligence
 │   ├── llm.py                  # shared Claude client and forced tool-use call
 │   ├── map.py                  # text to CallScript via Claude forced tool use
