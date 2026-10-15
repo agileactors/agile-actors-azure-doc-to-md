@@ -57,7 +57,7 @@ class AttentionPoint(BaseModel):
     text: str = Field(
         ..., description="The caveat text, exactly as worded in the source."
     )
-    children: list["AttentionPoint"] = Field(
+    children: list[AttentionPoint] = Field(
         default_factory=list,
         description="Sub-points nested under this one, if the source implies any.",
     )
@@ -98,7 +98,7 @@ class CallScript(BaseModel):
     )
 
     @model_validator(mode="after")
-    def check_single_shape(self) -> "CallScript":
+    def check_single_shape(self) -> CallScript:
         """Enforce that a document is a tree OR a narrative, never both."""
         is_tree = bool(self.steps)
         is_narrative = bool(self.main_text)

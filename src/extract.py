@@ -1,8 +1,9 @@
+import os
+from pathlib import Path
+
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import DocumentContentFormat
 from azure.core.credentials import AzureKeyCredential
-import os
-from pathlib import Path
 
 
 def extract_text(source_path: str | Path) -> str:

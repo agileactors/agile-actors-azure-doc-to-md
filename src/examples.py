@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from pathlib import Path
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "few_shot_examples"
