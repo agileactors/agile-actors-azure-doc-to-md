@@ -1,3 +1,5 @@
+![Turning messy docs into structured Markdown](assets/images/cover.png)
+
 # Turning messy docs into structured Markdown
 
 Word documents go in, structured Markdown comes out — with a deterministic
