@@ -125,7 +125,7 @@ class CallScript(BaseModel):
         """
         branch_count = sum(len(step.branches) for step in self.steps)
         narrative_words = len(self.main_text.split()) if self.main_text else 0
-        # flatten_attention_points counts every point, including nested ones, 
+        # flatten_attention_points counts every point, including nested ones,
         # so we don't need to count children separately.
         attention_count = len(flatten_attention_points(self.attention_points))
         return (

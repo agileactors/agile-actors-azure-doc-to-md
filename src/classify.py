@@ -10,7 +10,6 @@ from .config import MODEL_NAME
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "few_shot_examples"
 
 
-
 def classify(raw_text: str) -> str:
     """
     Classify a document as "tree" or "narrative".

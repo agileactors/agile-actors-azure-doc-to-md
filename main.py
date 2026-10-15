@@ -154,7 +154,9 @@ def run_batch() -> None:
         else:
             warnings_text = "No warnings - all checks passed."
 
-        (file_output_dir / "warnings.txt").write_text(warnings_text + "\n", encoding="utf-8")
+        (file_output_dir / "warnings.txt").write_text(
+            warnings_text + "\n", encoding="utf-8"
+        )
         processed += 1
         print(f"Warnings found: {len(warnings)} warning(s)")
         print("\n")
