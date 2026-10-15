@@ -8,7 +8,6 @@ def map_to_schema(raw_text: str, category: str) -> CallScript:
     """
     Map raw text into a validated CallScript.
 
-
     Args:
         raw_text (str): The raw text to map.
         category (str): The category of the document, used to load few-shot examples.
@@ -26,6 +25,7 @@ def map_to_schema(raw_text: str, category: str) -> CallScript:
     # The actual document is added as the final user message.
     messages.append({"role": "user", "content": raw_text})
 
+    # Forced tool use: Claude must return a CallScript, which is then validated.
     return request_call_script(
         system=AGENT_PROMPT,
         messages=messages,
