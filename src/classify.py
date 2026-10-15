@@ -1,7 +1,6 @@
 from __future__ import annotations
 import anthropic
 
-import os
 from pathlib import Path
 
 
@@ -12,7 +11,7 @@ EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "few_shot_examples"
 
 
 
-def classify(raw_text: str) -> str | None:
+def classify(raw_text: str) -> str:
     """
     Classify a document as "tree" or "narrative".
 
@@ -20,12 +19,8 @@ def classify(raw_text: str) -> str | None:
         raw_text (str): The text to classify.
 
     Returns:
-        None if no ANTHROPIC_API_KEY is set, otherwise a str: "tree" or "narrative".
+        str: "tree" or "narrative".
     """
-
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("No ANTHROPIC_API_KEY found, skipping classification.")
-        return None
 
     client = anthropic.Anthropic()
     response = client.messages.create(
@@ -85,5 +80,10 @@ def load_few_shot_examples(category: str) -> list[tuple[str, str]]:
                 f"Few-shot example '{raw_path.name}' has no matching "
                 f"'{expected_path.name}'."
             )
-        pairs.append((raw_path.read_text(), expected_path.read_text()))
+        pairs.append(
+            (
+                raw_path.read_text(encoding="utf-8"),
+                expected_path.read_text(encoding="utf-8"),
+            )
+        )
     return pairs

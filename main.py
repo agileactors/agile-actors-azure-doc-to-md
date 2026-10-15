@@ -99,12 +99,8 @@ REQUIRED_ENV_VARS = (
 
 
 def check_credentials() -> None:
-    """Fail up front if a credential is missing.
-
-    Without this, a missing key surfaces several stages later as
-    whatever the first stage to need it happens to raise — for a
-    missing ANTHROPIC_API_KEY that is a TypeError from `PosixPath /
-    None`, which says nothing about the actual problem.
+    """
+    Fail up front if a credential is missing.
     """
     missing = [name for name in REQUIRED_ENV_VARS if not os.environ.get(name)]
     if missing:
@@ -149,8 +145,8 @@ def run_batch() -> None:
             print(f"  FAILED: {exc}")
             continue
 
-        (file_output_dir / "final.md").write_text(final_markdown)
-        (file_output_dir / "raw.txt").write_text(raw_text)
+        (file_output_dir / "final.md").write_text(final_markdown, encoding="utf-8")
+        (file_output_dir / "raw.txt").write_text(raw_text, encoding="utf-8")
 
         if warnings:
             warnings_text = "\n".join(f"- {warning}" for warning in warnings)
@@ -158,7 +154,7 @@ def run_batch() -> None:
         else:
             warnings_text = "No warnings - all checks passed."
 
-        (file_output_dir / "warnings.txt").write_text(warnings_text + "\n")
+        (file_output_dir / "warnings.txt").write_text(warnings_text + "\n", encoding="utf-8")
         processed += 1
         print(f"Warnings found: {len(warnings)} warning(s)")
         print("\n")
