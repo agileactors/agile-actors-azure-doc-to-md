@@ -129,7 +129,8 @@ python main.py
 
 
 Two documents ship in `sample_inputs/`, so this runs out of the box. Each one
-gets a folder in `outputs/<name>/`:
+gets a folder in `outputs/<name>/`, where `<name>` is its path under
+`sample_inputs/` without the extension:
 
 | File | Contents |
 |---|---|
@@ -139,7 +140,8 @@ gets a folder in `outputs/<name>/`:
 
 `warnings.txt` is written even when nothing was flagged, so "no warnings" is a
 recorded fact rather than a missing file you have to interpret. One document
-failing doesn't stop the batch.
+failing doesn't stop the batch: its folder gets an `error.txt` instead, and any
+files from an earlier run are removed so nothing stale is left behind.
 
 Cost per document: one Azure call, one classification call, one mapping call, and
 a repair call only if validation flagged something. The model is named in one
@@ -165,8 +167,8 @@ uv run src/create_few_shot_examples/create_raw_examples.py
 
 It runs every document there through the same Azure extraction the pipeline
 uses and writes the result into the matching `few_shot_examples/` folder. If a
-`_expected.json` already exists, it also validates it and renders a `<name>.md`
-preview so you can review the pair. Each run re-extracts every document (one
+`_expected.json` already exists, it also validates it against the schema, so a
+malformed example fails there rather than at mapping time. Each run re-extracts every document (one
 Azure call each) and overwrites the existing `_raw.txt` files.
 
 Keep the two worlds separate. `sample_inputs/` is deliberately *not* part of the
@@ -192,7 +194,7 @@ answer and the output tells you nothing.
 │   │   └── create_raw_examples.py  # extracts synthetic_docs into few_shot_examples
 │   ├── prompts                 # one system prompt per LLM stage
 │   ├── classify.py             # tree or narrative
-│   ├── config.py               # the model name, set in one place
+│   ├── config.py               # model, token limit, overlap threshold, paths
 │   ├── examples.py             # loads few-shot pairs from few_shot_examples/
 │   ├── extract.py              # .docx to text via Azure Document Intelligence
 │   ├── llm.py                  # shared Claude client and forced tool-use call
