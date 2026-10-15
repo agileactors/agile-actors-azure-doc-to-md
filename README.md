@@ -216,6 +216,7 @@ answer and the output tells you nothing.
 ├── templates
 │   └── template_script.md.j2   # the single Jinja2 template, both shapes
 ├── .gitignore
+├── .python-version            # Python version uv installs and uses
 ├── article.md                  # the companion article
 ├── LICENSE
 ├── main.py                     # batch orchestrator, the entry point
