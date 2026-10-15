@@ -12,9 +12,8 @@ the same pipeline in detail. This README covers what it does and why.
 2. [How it works](#how-it-works)
 3. [Setup](#setup)
 4. [Using your own documents](#using-your-own-documents)
-5. [What it doesn't do](#what-it-doesnt-do)
-6. [Code Structure](#code-structure)
-7. [License](#license)
+5. [Code Structure](#code-structure)
+6. [License](#license)
 
 ## The problem
 
@@ -103,33 +102,34 @@ when it might not have.
 
 ## Setup
 
-Requires **Python 3.12+** and [uv](https://docs.astral.sh/uv/).
+Requires **Python 3.12+**. Install with [uv](https://docs.astral.sh/uv/) or plain pip.
+
+**With uv**
 
 ```bash
 git clone https://github.com/agileactors/agile-actors-azure-doc-to-md.git
 cd agile-actors-azure-doc-to-md
-uv sync
+uv sync                 
 
 cp environment/.env.example environment/.env   # then fill in all three values
 
 uv run main.py
 ```
 
-Credentials live in **`environment/.env`**, not a root-level `.env` — you need an
-[Azure Document Intelligence
-resource](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/)
-and an [Anthropic API key](https://console.anthropic.com/). There is no offline
-mode; `main.py` checks for all three up front and names anything missing.
+**With pip**
 
-**No keys? You can still see the results.** 
+```bash
+git clone https://github.com/agileactors/agile-actors-azure-doc-to-md.git
+cd agile-actors-azure-doc-to-md
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt    # or requirements-dev.txt to add the dev tools (ruff)
 
-The output of a real run on both
-sample inputs is committed under `outputs/`. Start with
-[`password_reset_procedure/final.md`](outputs/password_reset_procedure/final.md)
-(a decision tree) and
-[`complaints_handling_overview/final.md`](outputs/complaints_handling_overview/final.md)
-(a narrative), and read each one next to its `raw.txt` to see what the pipeline
-rebuilt.
+cp environment/.env.example environment/.env   # then fill in all three values
+
+python main.py
+```
+
 
 Two documents ship in `sample_inputs/`, so this runs out of the box. Each one
 gets a folder in `outputs/<name>/`:
@@ -147,6 +147,7 @@ failing doesn't stop the batch.
 Cost per document: one Azure call, one classification call, one mapping call, and
 a repair call only if validation flagged something. The model is named in one
 place, `src/config.py`.
+
 
 ## Using your own documents
 
@@ -174,18 +175,6 @@ Azure call each) and overwrites the existing `_raw.txt` files.
 Keep the two worlds separate. `sample_inputs/` is deliberately *not* part of the
 example corpus — if a demo input is also an example, the model is handed its own
 answer and the output tells you nothing.
-
-## What it doesn't do
-
-- **It is bounded by extraction.** Nothing downstream can recover a label that
-  never came back.
-- **Validation checks structure, not meaning.** A branch pointed at the *wrong*
-  existing outcome is invisible to a graph check.
-- **Narrative checks are fuzzy.** A source sentence counts as covered when 80%
-  of its distinct words appear in `main_text`, so a sentence can lose a few words
-  and still pass, and those spare words leave room for a short invented phrase
-  under the size limit.
-- **One repair attempt**, then the warnings are surfaced rather than retried.
 
 
 ## Code Structure
