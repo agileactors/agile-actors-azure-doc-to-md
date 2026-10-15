@@ -31,7 +31,6 @@ def request_call_script(
     system: str,
     messages: list[dict],
     tool_description: str,
-    client: anthropic.Anthropic | None = None,
 ) -> CallScript:
     """
     Ask the model for a CallScript via forced tool use and validate it.
@@ -44,11 +43,10 @@ def request_call_script(
         system (str): The system prompt for this stage.
         messages (list[dict]): The conversation to send, ending with a user message.
         tool_description (str): What the tool records, shown to the model.
-        client (anthropic.Anthropic | None): Client to use; the shared one if omitted.
     Returns:
         CallScript: The validated CallScript object.
     """
-    client = client or get_client()
+    client = get_client()
     tool = {
         "name": _TOOL_NAME,
         "description": tool_description,

@@ -1,14 +1,10 @@
-import anthropic
-
 from .examples import load_few_shot_examples
 from .llm import request_call_script
 from .prompts import AGENT_PROMPT
 from .pydantic_schema import CallScript
 
 
-def map_to_schema(
-    raw_text: str, category: str, client: anthropic.Anthropic | None = None
-) -> CallScript:
+def map_to_schema(raw_text: str, category: str) -> CallScript:
     """
     Map raw text into a validated CallScript.
 
@@ -16,7 +12,6 @@ def map_to_schema(
     Args:
         raw_text (str): The raw text to map.
         category (str): The category of the document, used to load few-shot examples.
-        client (anthropic.Anthropic | None): Client to use; the shared one if omitted.
     Returns:
         CallScript: The validated CallScript object.
     """
@@ -35,5 +30,4 @@ def map_to_schema(
         system=AGENT_PROMPT,
         messages=messages,
         tool_description="Record the CallScript structure extracted from the source text.",
-        client=client,
     )

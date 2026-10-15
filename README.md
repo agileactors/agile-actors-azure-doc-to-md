@@ -179,7 +179,7 @@ answer and the output tells you nothing.
 ```
 .
 ├── assets
-│   └── images                  # images used in the article
+│   └── images                  # README cover image
 ├── environment
 │   └── .env.example            # credentials template: copy to .env in this folder
 ├── few_shot_examples           # what the model is shown at mapping time

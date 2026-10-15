@@ -1,5 +1,4 @@
 from __future__ import annotations
-import anthropic
 
 from .llm import request_call_script
 from .prompts import REPAIR_SYSTEM_PROMPT
@@ -8,10 +7,7 @@ from .validate import sanity_check
 
 
 def attempt_repair(
-    script: CallScript,
-    warnings: list[str],
-    raw_text: str,
-    client: anthropic.Anthropic | None = None,
+    script: CallScript, warnings: list[str], raw_text: str
 ) -> tuple[CallScript, list[str], bool]:
     """
     Attempt exactly one repair call and apply the acceptance gate.
@@ -25,7 +21,6 @@ def attempt_repair(
         script (CallScript): The original CallScript object.
         warnings (list[str]): The list of warnings to fix.
         raw_text (str): The source document text, used to restore missing content.
-        client (anthropic.Anthropic | None): Client to use; the shared one if omitted.
     Returns:
         A tuple of (final_script, final_warnings, was_repair_accepted).
         If the repair is rejected, `script` and `warnings` are returned
@@ -34,7 +29,7 @@ def attempt_repair(
     if not warnings:
         return script, warnings, False
 
-    candidate = llm_repair(script, warnings, raw_text, client)
+    candidate = llm_repair(script, warnings, raw_text)
     candidate_warnings = sanity_check(candidate, raw_text)
 
     warnings_improved = len(candidate_warnings) < len(warnings)
@@ -47,12 +42,7 @@ def attempt_repair(
     return script, warnings, False
 
 
-def llm_repair(
-    script: CallScript,
-    warnings: list[str],
-    raw_text: str,
-    client: anthropic.Anthropic | None = None,
-) -> CallScript:
+def llm_repair(script: CallScript, warnings: list[str], raw_text: str) -> CallScript:
     """
     Call the LLM to repair a CallScript object.
 
@@ -60,7 +50,6 @@ def llm_repair(
         script (CallScript): The mapped CallScript object to repair.
         warnings (list[str]): The list of warnings to fix.
         raw_text (str): The source document text, used to restore missing content.
-        client (anthropic.Anthropic | None): Client to use; the shared one if omitted.
     Returns:
         CallScript: The repaired CallScript object returned by the LLM.
     """
@@ -75,5 +64,4 @@ def llm_repair(
         system=REPAIR_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_message}],
         tool_description="Record the repaired CallScript structure.",
-        client=client,
     )
