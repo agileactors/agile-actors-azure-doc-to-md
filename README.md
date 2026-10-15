@@ -5,9 +5,6 @@
 Word documents go in, structured Markdown comes out — with a deterministic
 validator between the language model and the file it writes.
 
-This is the companion code for [`article.md`](article.md), which walks through
-the same pipeline in detail. This README covers what it does and why.
-
 1. [The problem](#the-problem)
 2. [How it works](#how-it-works)
 3. [Setup](#setup)
@@ -182,7 +179,7 @@ answer and the output tells you nothing.
 ```
 .
 ├── assets
-│   └── images                  # images used by the article
+│   └── images                  # README cover image
 ├── environment
 │   └── .env.example            # credentials template: copy to .env in this folder
 ├── few_shot_examples           # what the model is shown at mapping time
@@ -196,7 +193,9 @@ answer and the output tells you nothing.
 │   ├── prompts                 # one system prompt per LLM stage
 │   ├── classify.py             # tree or narrative
 │   ├── config.py               # the model name, set in one place
+│   ├── examples.py             # loads few-shot pairs from few_shot_examples/
 │   ├── extract.py              # .docx to text via Azure Document Intelligence
+│   ├── llm.py                  # shared Claude client and forced tool-use call
 │   ├── map.py                  # text to CallScript via Claude forced tool use
 │   ├── pydantic_schema.py      # CallScript, DecisionStep, Outcome, AttentionPoint
 │   ├── render.py               # CallScript to Markdown via Jinja2
@@ -208,7 +207,6 @@ answer and the output tells you nothing.
 │   └── template_script.md.j2   # the single Jinja2 template, both shapes
 ├── .gitignore
 ├── .python-version            # Python version uv installs and uses
-├── article.md                  # the companion article
 ├── LICENSE
 ├── main.py                     # batch orchestrator, the entry point
 ├── pyproject.toml              # project metadata and dependencies

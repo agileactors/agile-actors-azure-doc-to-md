@@ -1,7 +1,5 @@
-import anthropic
-
-from .classify import load_few_shot_examples
-from .config import MODEL_NAME
+from .examples import load_few_shot_examples
+from .llm import request_call_script
 from .prompts import AGENT_PROMPT
 from .pydantic_schema import CallScript
 
@@ -17,7 +15,6 @@ def map_to_schema(raw_text: str, category: str) -> CallScript:
     Returns:
         CallScript: The validated CallScript object.
     """
-    client = anthropic.Anthropic()
     few_shot = load_few_shot_examples(category)
     print(f"few_shot={len(few_shot)} examples for category {category}")
 
@@ -29,30 +26,8 @@ def map_to_schema(raw_text: str, category: str) -> CallScript:
     # The actual document is added as the final user message.
     messages.append({"role": "user", "content": raw_text})
 
-    # The tool's `input_schema` is the Pydantic model's JSON schema, which
-    # forces the model to produce a valid CallScript object.
-    tool = {
-        "name": "record_call_script",
-        "description": (
-            "Record the CallScript structure extracted from the source text."
-        ),
-        "input_schema": CallScript.model_json_schema(),
-    }
-
-    response = client.messages.create(
-        model=MODEL_NAME,
-        # A full CallScript (steps, outcomes, attention points) can be large,
-        # so max_tokens needs enough headroom for the whole structured object.
-        max_tokens=16000,
+    return request_call_script(
         system=AGENT_PROMPT,
         messages=messages,
-        tools=[tool],
-        tool_choice={"type": "tool", "name": "record_call_script"},
+        tool_description="Record the CallScript structure extracted from the source text.",
     )
-
-    tool_call = next((b for b in response.content if b.type == "tool_use"), None)
-    if tool_call is None:
-        raise ValueError(f"No tool_use block (stop_reason={response.stop_reason!r})")
-
-    # Validate the tool's input against the Pydantic model
-    return CallScript.model_validate(tool_call.input)

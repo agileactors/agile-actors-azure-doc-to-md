@@ -98,7 +98,7 @@ def classify(raw_text: str) -> str:
     """
     Classify a document as "tree" or "narrative".
     """
-    client = anthropic.Anthropic()
+    client = get_client()  # Anthropic client
     response = client.messages.create(
         model=MODEL_NAME,
         max_tokens=16,  # Keep it short, we only need a label.
@@ -218,7 +218,7 @@ def map_to_schema(raw_text: str, category: str) -> CallScript:
     """
     Map raw text into a validated CallScript.
     """
-    client = anthropic.Anthropic()
+    client = get_client()  # Anthropic client
     few_shot = load_few_shot_examples(category)
 
     messages = []

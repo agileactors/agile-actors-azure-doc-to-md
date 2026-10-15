@@ -1,10 +1,9 @@
 from __future__ import annotations
-import anthropic
 
+from .llm import request_call_script
 from .prompts import REPAIR_SYSTEM_PROMPT
 from .pydantic_schema import CallScript
 from .validate import sanity_check
-from .config import MODEL_NAME
 
 
 def attempt_repair(
@@ -54,8 +53,6 @@ def llm_repair(script: CallScript, warnings: list[str], raw_text: str) -> CallSc
     Returns:
         CallScript: The repaired CallScript object returned by the LLM.
     """
-
-    client = anthropic.Anthropic()
     warning_text = "\n".join(f"- {warning}" for warning in warnings)
     user_message = (
         f"Source document:\n{raw_text}\n\n"
@@ -63,22 +60,8 @@ def llm_repair(script: CallScript, warnings: list[str], raw_text: str) -> CallSc
         f"Warnings to fix:\n{warning_text}"
     )
 
-    tool = {
-        "name": "record_call_script",
-        "description": "Record the repaired CallScript structure.",
-        "input_schema": CallScript.model_json_schema(),
-    }
-
-    response = client.messages.create(
-        model=MODEL_NAME,
-        # Same budget as the mapping call: the whole object comes back as tool input.
-        max_tokens=16000,
+    return request_call_script(
         system=REPAIR_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_message}],
-        tools=[tool],
-        tool_choice={"type": "tool", "name": "record_call_script"},
+        tool_description="Record the repaired CallScript structure.",
     )
-    tool_call = next((b for b in response.content if b.type == "tool_use"), None)
-    if tool_call is None:
-        raise ValueError(f"No tool_use block (stop_reason={response.stop_reason!r})")
-    return CallScript.model_validate(tool_call.input)

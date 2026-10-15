@@ -6,13 +6,13 @@ import sys
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
+from src.examples import EXAMPLES_DIR
 from src.extract import extract_text
 from src.pydantic_schema import CallScript
 from src.render import render_markdown
 
 load_dotenv(PROJECT_ROOT / "environment" / ".env")
 
-EXAMPLES_DIR = PROJECT_ROOT / "few_shot_examples"
 SYNTHETIC_DOCS_DIR = PROJECT_ROOT / "synthetic_docs" / "docs"
 
 # synthetic_docs/docs/<folder> -> classify label used as the few_shot_examples/ folder name
