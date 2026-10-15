@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from .config import MODEL_NAME
 from .llm import get_client
 from .prompts import CLASSIFY_PROMPT

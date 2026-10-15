@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from .llm import request_call_script
 from .prompts import REPAIR_SYSTEM_PROMPT
 from .pydantic_schema import CallScript

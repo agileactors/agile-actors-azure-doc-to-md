@@ -6,21 +6,23 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
-from src.examples import EXAMPLES_DIR
+from src.config import (
+    ENV_FILE,
+    EXAMPLES_DIR,
+    SOURCE_SUFFIXES,
+    SYNTHETIC_DOCS_DIR,
+)
 from src.extract import extract_text
 from src.pydantic_schema import CallScript
 
-load_dotenv(PROJECT_ROOT / "environment" / ".env")
+load_dotenv(ENV_FILE)
 
-SYNTHETIC_DOCS_DIR = PROJECT_ROOT / "synthetic_docs" / "docs"
 
 # synthetic_docs/docs/<folder> -> classify label used as the few_shot_examples/ folder name
 CATEGORY_BY_FOLDER = {
     "narratives": "narrative",
     "trees": "tree",
 }
-
-SOURCE_SUFFIXES = (".docx", ".pdf")  # .pdf is supported but not used in the demo
 
 
 def create_raw_example(docx_path: str | Path, shape_category: str, name: str) -> Path:

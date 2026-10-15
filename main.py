@@ -2,40 +2,38 @@
 Batch orchestrator for the call-flow structuring demo.
 
 For every document under `sample_inputs/` (searched recursively), this
-always writes three outputs to `outputs/<name>/`:
+always writes three outputs to `outputs/<name>/`, where `<name>` mirrors
+the document's path under `sample_inputs/` without its suffix:
 
 - `final.md`      the rendered Markdown
 - `raw.txt`       the normalized source text, for diffing
 - `warnings.txt`  written even when empty, so its presence never has
                    to be inferred — "no warnings" is a fact, not a gap
 
+A document that fails gets only `error.txt` instead, and files from an
+earlier run are removed first so nothing stale is left behind.
+
 A short summary is printed at the end, naming any document that was flagged or that failed.
 """
-
-from __future__ import annotations
 
 import os
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-
 from src.classify import classify
-from src.map import map_to_schema
+from src.config import ENV_FILE, OUTPUTS_DIR, SAMPLE_INPUTS_DIR, SOURCE_SUFFIXES
 from src.extract import extract_text
+from src.map import map_to_schema
 from src.render import render_markdown
 from src.repair import attempt_repair
 from src.validate import sanity_check
 
-PROJECT_ROOT = Path(__file__).resolve().parent
-
-load_dotenv(PROJECT_ROOT / "environment" / ".env")
-
-SAMPLE_INPUTS_DIR = PROJECT_ROOT / "sample_inputs"
-OUTPUTS_DIR = PROJECT_ROOT / "outputs"
+load_dotenv(ENV_FILE)
 
 
-SOURCE_SUFFIXES = (".docx",)
+# Every file a run can leave in `outputs/<name>/`; `error.txt` only on failure.
+OUTPUT_FILES = ("final.md", "raw.txt", "warnings.txt", "error.txt")
 
 
 def process_file(source_path: Path) -> tuple[str, list[str], str]:
@@ -107,7 +105,7 @@ def check_credentials() -> None:
         raise SystemExit(
             "Missing credential(s): "
             + ", ".join(missing)
-            + f"\nSet them in {PROJECT_ROOT / 'environment' / '.env'} "
+            + f"\nSet them in {ENV_FILE} "
             "(copy environment/.env.example to start)."
         )
 
@@ -118,12 +116,9 @@ def run_batch() -> None:
     OUTPUTS_DIR.mkdir(exist_ok=True)
 
     processed = 0
-    # Names, not counts: "1 flagged" only tells you to go looking.
     flagged: list[str] = []
     failed: list[str] = []
 
-    # `rglob`, not `iterdir`: a document filed in a subfolder would
-    # otherwise be skipped silently rather than reported as failed.
     source_paths = sorted(
         path
         for path in SAMPLE_INPUTS_DIR.rglob("*")
@@ -133,9 +128,14 @@ def run_batch() -> None:
         print(f"No source documents found under {SAMPLE_INPUTS_DIR}.")
 
     for source_path in source_paths:
-        stem = source_path.stem
-        file_output_dir = OUTPUTS_DIR / stem
-        file_output_dir.mkdir(exist_ok=True)
+        relative_name = source_path.relative_to(SAMPLE_INPUTS_DIR).with_suffix("")
+        stem = relative_name.as_posix()
+        file_output_dir = OUTPUTS_DIR / relative_name
+        file_output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Clear the previous run's files first to avoid leaving stale outputs behind.
+        for name in OUTPUT_FILES:
+            (file_output_dir / name).unlink(missing_ok=True)
 
         print(f"Processing {source_path.name}...")
         try:
@@ -143,6 +143,9 @@ def run_batch() -> None:
         except Exception as exc:  # noqa: BLE001 - batch must not die on one file
             failed.append(stem)
             print(f"  FAILED: {exc}")
+            (file_output_dir / "error.txt").write_text(
+                f"{type(exc).__name__}: {exc}\n", encoding="utf-8"
+            )
             continue
 
         (file_output_dir / "final.md").write_text(final_markdown, encoding="utf-8")

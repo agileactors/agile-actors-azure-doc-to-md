@@ -1,12 +1,7 @@
-from __future__ import annotations
-
 import re
 
+from .config import MIN_WORD_OVERLAP_RATIO
 from .pydantic_schema import CallScript, flatten_attention_points
-
-# The minimum fraction of distinct words in a source sentence that must also appear in the `main_text` for it to count as "covered" by the narrative.
-# The same ratio decides whether a step or outcome label matches a source line, and whether a source attention-point line is covered by `attention_points`.
-_MIN_WORD_OVERLAP_RATIO = 0.8
 
 # The number of lines at the top of a document to search for a metadata line
 _METADATA_SEARCH_LINES = 5
@@ -155,7 +150,7 @@ def _check_grounding(script: CallScript, raw_text: str) -> list[str]:
             (len(label_words & line) / len(label_words) for line in source_lines),
             default=0.0,
         )
-        if best_overlap < _MIN_WORD_OVERLAP_RATIO:
+        if best_overlap < MIN_WORD_OVERLAP_RATIO:
             warnings.append(
                 f"Ungrounded node: '{node_id}' ({label!r}) does not match any "
                 f"line in the source (best word overlap {best_overlap:.0%})."
@@ -188,7 +183,7 @@ def _check_attention_coverage(script: CallScript, raw_text: str) -> list[str]:
     tree grounding only looks at steps and outcomes, so without this
     check a dropped caveat would pass silently. Each non-empty source
     line under the heading counts as covered if at least
-    _MIN_WORD_OVERLAP_RATIO of its distinct words appear in a single
+    MIN_WORD_OVERLAP_RATIO of its distinct words appear in a single
     attention point, nested ones included.
 
     Args:
@@ -217,7 +212,7 @@ def _check_attention_coverage(script: CallScript, raw_text: str) -> list[str]:
             (len(line_words & point) / len(line_words) for point in point_words),
             default=0.0,
         )
-        if best_overlap < _MIN_WORD_OVERLAP_RATIO:
+        if best_overlap < MIN_WORD_OVERLAP_RATIO:
             warnings.append(
                 f"Possible missing attention point: source line not found in "
                 f"attention_points (best word overlap {best_overlap:.0%}): "
@@ -249,7 +244,7 @@ def _check_narrative_coverage(script: CallScript, raw_text: str) -> list[str]:
             continue
 
         overlap = len(sentence_words & output_words) / len(sentence_words)
-        if overlap < _MIN_WORD_OVERLAP_RATIO:
+        if overlap < MIN_WORD_OVERLAP_RATIO:
             warnings.append(
                 f"Possible missing content: source sentence not found in "
                 f"main_text (word overlap {overlap:.0%}): {sentence.strip()!r}"

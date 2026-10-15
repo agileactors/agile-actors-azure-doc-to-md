@@ -1,15 +1,9 @@
-from __future__ import annotations
-
 from functools import lru_cache
 
 import anthropic
 
-from .config import MODEL_NAME
+from .config import CALL_SCRIPT_MAX_TOKENS, MODEL_NAME
 from .pydantic_schema import CallScript
-
-# A full CallScript (steps, outcomes, attention points) can be large, and the
-# whole object comes back as tool input, so this needs enough headroom.
-CALL_SCRIPT_MAX_TOKENS = 16000
 
 _TOOL_NAME = "record_call_script"
 
