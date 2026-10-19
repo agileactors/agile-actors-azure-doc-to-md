@@ -1,0 +1,46 @@
+{# Sections common to both shapes always render, even when the source had
+   nothing for them. An empty section is a recorded fact ("this document
+   has no attention points"); an omitted one is indistinguishable from a
+   mapping failure. Shape-specific sections below stay conditional, since
+   `CallScript` allows exactly one shape and an empty "Main Text" under a
+   decision tree would be noise, not information. #}
+# {{ script.title }}
+
+**Category:** {{ script.category if script.category else '_None._' }}
+
+
+## Attention points
+
+{% if script.attention_points -%}
+{% for point in script.attention_points recursive -%}
+{{ '  ' * loop.depth0 }}- {{ point.text }}
+{% if point.children -%}
+{{ loop(point.children) }}
+{% endif -%}
+{% endfor %}
+{% else -%}
+_None._
+{% endif %}
+
+{% if script.steps -%}
+## Call flow
+
+{% for step in script.steps -%}
+**{{ step.id }}.** {{ step.question }}
+{% for condition, target in step.branches.items() -%}
+  - If **{{ condition }}** → `{{ target }}`
+{% endfor %}
+
+{% endfor %}
+## Outcomes
+
+{% for outcome in script.outcomes -%}
+- **{{ outcome.id }}** ({{ outcome.title }}): {{ outcome.description }}
+{% endfor %}
+{% endif %}
+
+{% if script.main_text -%}
+## Main Text
+
+{{ script.main_text }}
+{% endif %}

@@ -1,0 +1,49 @@
+# Card Cancellation Procedure
+
+Category: Card Process
+
+This document describes the decision process consultants follow for this procedure.
+
+Customer requests for cancellation
+
+
+## Reason for cancellation?
+
+
+## Voluntary closure
+
+
+## Lost/Stolen
+
+
+## Any pending transactions on the card?
+
+
+## Identity Verified using VAT?
+
+
+## No
+
+
+## Yes
+
+
+## Card blocked immediately
+
+
+## No
+
+
+## Yes
+
+
+## Request denied
+
+
+## Attention points
+
+A card reported lost or stolen is blocked once identity is verified using VAT. Where identity cannot be verified, the request is denied rather than held.
+
+Voluntary cancellations with pending transactions must be denied until those transactions settle.
+
+Always confirm whether the customer wants a replacement card issued before closing the request.

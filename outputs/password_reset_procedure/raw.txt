@@ -1,0 +1,43 @@
+# Password Reset Procedure
+
+Category: Reset Process
+
+This document describes the decision process consultants follow for this procedure.
+
+Customer requests password reset
+
+
+## Identity verified via standard two-way authenticator?
+
+
+## No
+
+
+## Yes
+
+
+## Reject the request
+
+
+## Suspicious activity detected on the account?
+
+
+## No
+
+
+## Yes
+
+
+## Inform the Security Team
+
+
+## Password reset link sent
+
+
+## Attention points
+
+Never process a reset without completing identity verification first.
+
+Temporary passwords must only be sent through a verified channel, such as the registered email address or phone number.
+
+If suspicious activity is detected, place a security hold and refer to fraud prevention before resetting.

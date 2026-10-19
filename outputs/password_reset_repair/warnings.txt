@@ -1,0 +1,2 @@
+- Unreachable outcome: 'OUTCOME_4' (Escalate to a supervisor) is defined but no branch routes to it.
+- Ungrounded node: 'OUTCOME_4' ('Escalate to a supervisor') does not match any line in the source (best word overlap 50%).

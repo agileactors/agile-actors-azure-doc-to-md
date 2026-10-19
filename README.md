@@ -1,0 +1,237 @@
+![Turning messy docs into structured Markdown](assets/images/cover.png)
+
+# Turning messy docs into structured Markdown
+
+Word documents go in, structured Markdown comes out — with a deterministic
+validator between the language model and the file it writes.
+
+1. [The problem](#the-problem)
+2. [How it works](#how-it-works)
+3. [Setup](#setup)
+4. [Using your own documents](#using-your-own-documents)
+5. [Code Structure](#code-structure)
+6. [License](#license)
+
+## The problem
+
+Procedures get written in two shapes: **decision trees**, usually drawn as a
+flowchart, and **plain narratives**, just prose. Both carry detail nobody can
+afford to lose — deadlines, escalation rules, caveats. Feeding a stack of them to
+an AI application means getting both into one predictable format, without
+dropping or inventing a word.
+
+The hard part is that layout extraction **reads boxes but not arrows**. A
+flowchart comes back as a flat list of labels in reading order. Every box
+survives; the topology — which is the entire content of a decision tree — does
+not. Here is what Azure returns for a password-reset flowchart:
+
+```
+## Identity verified via standard two-way authenticator?
+## No
+## Yes
+## Reject the request
+## Suspicious activity detected on the account?
+...
+```
+
+Nine flowchart lines, all at the same heading level. Which `Yes` belongs to which
+question, and where either one leads, is gone. Rebuilding that is the pipeline's
+actual job — and the reason the validation and repair stages exist.
+
+Here is the same document after a run:
+
+```markdown
+## Call flow
+
+**STEP_1.** Identity verified via standard two-way authenticator?
+- If **no** → `OUTCOME_1`
+- If **yes** → `STEP_2`
+
+**STEP_2.** Suspicious activity detected on the account?
+- If **yes** → `OUTCOME_2`
+- If **no** → `OUTCOME_3`
+
+## Outcomes
+
+- **OUTCOME_1** (Reject the request): Reject the request
+- **OUTCOME_2** (Inform the Security Team): Inform the Security Team
+- **OUTCOME_3** (Password reset link sent): Password reset link sent
+```
+
+The structure is reconstructed. The wording is not touched — every question and
+outcome above appears verbatim in the source; only the `Yes`/`No` branch labels
+are lowercased.
+
+## How it works
+
+| Stage | What it does | File |
+|---|---|---|
+| **Extract** | `.docx` → text and layout, via Azure Document Intelligence `prebuilt-layout` | `src/extract.py` |
+| **Classify** | tree or narrative — picks which few-shot examples to show the model | `src/classify.py` |
+| **Map** | text + examples → a `CallScript` object, via Claude forced tool-use | `src/map.py`, `src/llm.py` |
+| **Validate** | deterministic structural checks, no LLM involved | `src/validate.py` |
+| **Repair** | one gated attempt, only if validation flagged something | `src/repair.py` |
+| **Render** | `CallScript` → Markdown, via a single Jinja2 template | `src/render.py` |
+
+**The design idea is that no stage trusts the one before it.**
+
+A single Pydantic model, `CallScript`, holds both shapes — tree fields (`steps`,
+`outcomes`) and the narrative field (`main_text`) — with a validator enforcing
+that exactly one is filled. That one constraint is what lets two very different
+documents share a schema and a render template.
+
+But a schema only checks shape, not sense. A model can return a perfectly valid
+object whose branches point at steps that were never defined. So after mapping,
+plain Python checks the graph: dangling references, steps or outcomes nothing routes to,
+steps or outcomes that match no single line in the source, and — for
+narratives — whether every source sentence actually made it into `main_text`
+and whether `main_text` is no longer than the source body. For both shapes, it
+checks that every attention point in the source made it into the output. No LLM,
+no tokens, same answer every time.
+
+If something is flagged, the model gets **exactly one** attempt to fix it, and
+that attempt has to earn its place. The cheapest way to "fix" a branch pointing
+nowhere is to delete the branch, so a repair is kept only if it both lowers the
+warning count **and** leaves the document no smaller. Otherwise the original
+stands. Either way, any warnings left are written out for a human.
+
+For example, if the password-reset mapping above loses its "Inform the
+Security Team" outcome and gains an invented "Escalate to a supervisor" one,
+the repair restores the first from the source but leaves the second alone,
+since removing it would mean deleting content. Its warnings stay in
+`warnings.txt` — see `outputs/password_reset_repair/`.
+
+The goal was never a pipeline that always gets it right. It's one that tells you
+when it might not have.
+
+## Setup
+
+Requires **Python 3.12+**. Install with [uv](https://docs.astral.sh/uv/) or plain pip.
+
+**With uv**
+
+```bash
+git clone https://github.com/agileactors/agile-actors-azure-doc-to-md.git
+cd agile-actors-azure-doc-to-md
+uv sync
+
+cp environment/.env.example environment/.env   # then fill in all three values
+
+uv run main.py
+```
+
+**With pip**
+
+```bash
+git clone https://github.com/agileactors/agile-actors-azure-doc-to-md.git
+cd agile-actors-azure-doc-to-md
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt    # or requirements-dev.txt to add the dev tools (ruff)
+
+cp environment/.env.example environment/.env   # then fill in all three values
+
+python main.py
+```
+
+
+Two documents ship in `sample_inputs/`, so this runs out of the box. Each one
+gets a folder in `outputs/<name>/`, where `<name>` is its path under
+`sample_inputs/` without the extension:
+
+| File | Contents |
+|---|---|
+| `final.md` | the rendered Markdown |
+| `raw.txt` | the extracted source text, for diffing |
+| `warnings.txt` | surviving warnings, or `No warnings - all checks passed.` |
+
+`warnings.txt` is written even when nothing was flagged, so "no warnings" is a
+recorded fact rather than a missing file you have to interpret. One document
+failing doesn't stop the batch: its folder gets an `error.txt` instead, and any
+files from an earlier run are removed so nothing stale is left behind.
+
+Cost per document: one Azure call, one classification call, one mapping call, and
+a repair call only if validation flagged something. The model is named in one
+place, `src/config.py`.
+
+
+## Using your own documents
+
+Drop any `.docx` into `sample_inputs/` and run again.
+
+For better results on a new kind of document, add a few-shot example: a
+`<name>_raw.txt` (the extracted text) and a `<name>_expected.json` (what it
+should map to, written by hand) in `few_shot_examples/tree/` or
+`few_shot_examples/narrative/`. The pipeline picks up new pairs automatically,
+and fails loudly if a `_raw.txt` has no matching `_expected.json`.
+
+To get the `_raw.txt`, put the `.docx` in `synthetic_docs/docs/trees/` or
+`synthetic_docs/docs/narratives/` and run:
+
+```bash
+uv run src/create_few_shot_examples/create_raw_examples.py
+```
+
+It runs every document there through the same Azure extraction the pipeline
+uses and writes the result into the matching `few_shot_examples/` folder. If a
+`_expected.json` already exists, it also validates it against the schema, so a
+malformed example fails there rather than at mapping time. Each run re-extracts
+every document and overwrites the existing `_raw.txt` files.
+
+Keep the two worlds separate. `sample_inputs/` is deliberately *not* part of the
+example corpus — if a demo input is also an example, the model is handed its own
+answer and the output tells you nothing.
+
+
+## Code Structure
+
+```
+.
+├── assets
+│   └── images                  # README cover image
+├── environment
+│   └── .env.example            # credentials template: copy to .env in this folder
+├── few_shot_examples           # what the model is shown at mapping time
+│   ├── narrative               # <name>_raw.txt + <name>_expected.json pairs
+│   └── tree                    # <name>_raw.txt + <name>_expected.json pairs
+├── outputs                     # committed sample results
+│   ├── complaints_handling_overview  # narrative sample, overwritten on each run
+│   ├── password_reset_procedure      # tree sample, overwritten on each run
+│   └── password_reset_repair         # the repair example
+├── sample_inputs               # what the demo processes, held out of the examples
+├── src                         # one module per stage
+│   ├── create_few_shot_examples
+│   │   └── create_raw_examples.py  # extracts synthetic_docs into few_shot_examples
+│   ├── prompts                 # one system prompt per LLM stage
+│   ├── classify.py             # tree or narrative
+│   ├── config.py               # model, token limit, overlap threshold, paths
+│   ├── extract.py              # .docx to text via Azure Document Intelligence
+│   ├── llm.py                  # shared Claude client and forced tool-use call
+│   ├── load_examples.py        # loads few-shot pairs from few_shot_examples/
+│   ├── map.py                  # text to CallScript via Claude forced tool use
+│   ├── pydantic_schema.py      # CallScript, DecisionStep, Outcome, AttentionPoint
+│   ├── render.py               # CallScript to Markdown via Jinja2
+│   ├── repair.py               # one gated repair attempt
+│   └── validate.py             # deterministic structural checks
+├── synthetic_docs
+│   └── docs                    # the source .docx files the examples came from
+├── templates
+│   └── call_script.md.j2       # the single Jinja2 template, both shapes
+├── .gitignore
+├── .python-version             # Python version uv installs and uses
+├── article.md                  # the companion article
+├── LICENSE
+├── main.py                     # batch orchestrator, the entry point
+├── pyproject.toml              # project metadata and dependencies
+├── README.md
+├── requirements.txt            # pinned dependencies for pip
+├── requirements-dev.txt        # requirements.txt plus the dev tools (ruff)
+└── uv.lock                     # pinned dependency versions
+```
+
+The stages in `src/` are independent and importable on their own — `main.py` only
+chains them together and writes the results.
+
+## License
+
+[MIT](LICENSE) — free to use, including commercially.

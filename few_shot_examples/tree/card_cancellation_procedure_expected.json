@@ -1,0 +1,57 @@
+{
+  "title": "Card Cancellation Procedure",
+  "category": "Card Process",
+  "attention_points": [
+    {
+      "text": "A card reported lost or stolen is blocked once identity is verified using VAT. Where identity cannot be verified, the request is denied rather than held.",
+      "children": []
+    },
+    {
+      "text": "Voluntary cancellations with pending transactions must be denied until those transactions settle.",
+      "children": []
+    },
+    {
+      "text": "Always confirm whether the customer wants a replacement card issued before closing the request.",
+      "children": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "STEP_1",
+      "question": "Reason for cancellation?",
+      "branches": {
+        "voluntary closure": "STEP_2",
+        "lost/stolen": "STEP_3"
+      }
+    },
+    {
+      "id": "STEP_2",
+      "question": "Any pending transactions on the card?",
+      "branches": {
+        "no": "OUTCOME_1",
+        "yes": "OUTCOME_2"
+      }
+    },
+    {
+      "id": "STEP_3",
+      "question": "Identity Verified using VAT?",
+      "branches": {
+        "yes": "OUTCOME_1",
+        "no": "OUTCOME_2"
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "OUTCOME_1",
+      "title": "Card blocked immediately",
+      "description": "Card blocked immediately"
+    },
+    {
+      "id": "OUTCOME_2",
+      "title": "Request denied",
+      "description": "Request denied"
+    }
+  ],
+  "main_text": null
+}
